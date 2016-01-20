@@ -1,0 +1,7 @@
+/deployer/settings/secrets.json
+/__pycache__/
+/deployer/apps/listeners/__pycache__/
+/.idea/
+/.DS_Store
+/.pycharm
+/simpleBlog/uploads
