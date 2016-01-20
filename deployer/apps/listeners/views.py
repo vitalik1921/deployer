@@ -5,7 +5,7 @@ from django.http import HttpResponse, Http404
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import Listeners, Logs
-from .utils import BitBucketClient, FTPClient, MailClient
+from .utils import BitBucketClient, FtpClient, MailClient
 
 
 @csrf_exempt
@@ -49,11 +49,11 @@ def handle_webhook(request, listener_uuid=None):
         # push new files to ftp server
         ftp_client, push_server_name = None, None
         if push_type == 'development':
-            ftp_client = FTPClient(repo_dir, listener.development_server_path, listener.development_server.host,
+            ftp_client = FtpClient(repo_dir, listener.development_server_path, listener.development_server.host,
                                    listener.development_server.username, listener.development_server.password)
             push_server_name = listener.development_server.name
         elif push_type == 'production':
-            ftp_client = FTPClient(repo_dir, listener.production_server_path, listener.production_server.host,
+            ftp_client = FtpClient(repo_dir, listener.production_server_path, listener.production_server.host,
                                    listener.production_server.username, listener.production_server.password)
             push_server_name = listener.production_server.name
 
@@ -70,7 +70,7 @@ def handle_webhook(request, listener_uuid=None):
         # remove tmp repo
         Logs.create_record(listener, 'Temporary data was removed')
 
-        HttpResponse('Have a nice day :)')
+        return HttpResponse('Have a nice day :)')
 
     else:
         raise Http404("Error in request")

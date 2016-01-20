@@ -1,4 +1,5 @@
 import os
+import ftplib
 import shutil
 
 from django.core.mail import send_mail
@@ -15,35 +16,159 @@ from ftpsync.targets import DirMetadata
 from .models import Listeners
 
 
-class CustomUploadSynchronizer(UploadSynchronizer):
-    def _match(self, entry):
-        default_omit = [".DS_Store",
-                        ".git",
-                        ".hg",
-                        ".svn",
-                        DirMetadata.META_FILE_NAME,
-                        DirMetadata.LOCK_FILE_NAME,
-                        ]
+class FtpSynchronizer():
+    def __init__(self, ftp_host, ftp_port, ftp_user, ftp_pass, local_dir, remote_dir, omit):
+        self.ftp_host = ftp_host
+        self.ftp_port = ftp_port
+        self.ftp_user = ftp_user
+        self.ftp_pass = ftp_pass
+        self.local_dir = local_dir
+        self.remote_dir = remote_dir
+        self.connection = ftplib.FTP()
+        self.omit = omit
 
-        name = entry.name
-        if name == DirMetadata.META_FILE_NAME:
-            return False
+    # Class initiailized with FTP server paramaters and local directory
 
-        if name in default_omit:
-            return False
-        ok = True
-        if entry.is_file() and self.include_files:
-            ok = False
-            for pat in self.include_files:
-                if fnmatch.fnmatch(name, pat):
-                    ok = True
-                    break
-        if ok and self.omit:
-            for pat in self.omit:
-                if fnmatch.fnmatch(name, pat):
-                    ok = False
-                    break
-        return ok
+    # Remove trailing slash
+    def stripslashes(self, string):
+        if string is "":
+            return string
+        if string[-1] is "/":
+            return string[:-1]
+        else:
+            return string
+
+    # Remove empty elements in array
+    def remove_empty(self, array):
+        count = 0
+        for elem in array:
+            if not elem:
+                del array[count]
+            count = count + 1
+        return array
+
+    # Connect to FTP server and login
+    def connect(self):
+        self.connection.connect(self.ftp_host, self.ftp_port)
+        self.connection.login(self.ftp_user, self.ftp_pass)
+
+    # Check if remote object is a directory
+    def is_dir(self, dirname):
+        current = self.connection.pwd()
+        try:
+            self.connection.cwd(dirname)
+            is_dir = True
+            self.connection.cwd(current)
+        except Exception:
+            is_dir = False
+
+        return is_dir
+
+    # Recursively delete remote directory
+    def delete_dir(self, dirname):
+
+        terminated = False
+
+        def outer_delete_dir(outer_dirname):
+            nonlocal terminated
+            current = self.connection.pwd()
+            try:
+                self.connection.rmd(outer_dirname)
+            except Exception:
+                self.connection.cwd(outer_dirname)
+                for elem in self.connection.mlsd():
+                    if elem[0] in ('.', '..'):
+                        continue
+
+                    absolute_path = os.path.join(current, outer_dirname, elem[0])
+                    if absolute_path in self.omit:
+                        terminated = True
+                        continue
+
+                    try:
+                        self.connection.delete(elem[0])
+                    except Exception:
+                        try:
+                            self.connection.rmd(elem[0])
+                        except Exception:
+                            outer_delete_dir(elem[0])
+
+                self.connection.cwd(current)
+                if not terminated:
+                    self.connection.rmd(outer_dirname)
+
+        outer_delete_dir(dirname)
+
+    # Upload local directory to remote
+    def sync(self):
+        self.connect()  # connect
+
+        # navigate to remote destination
+        remote_current = self.connection.pwd()
+
+        dest_remote = self.remote_dir
+        dest_remote = dest_remote.replace(remote_current, "", 1)
+        dest_remote = self.stripslashes(dest_remote)
+        self.connection.cwd(dest_remote)
+        # remote working directory = REMOTE DESTINATION
+
+        # Commence os.walk and transfer
+        # os.walk is a way to cover all the files and directories
+        # on local machine recursively
+        for case in os.walk(self.local_dir):
+            path = case[0]  # absolute path
+            dirs = case[1]  # directories in the directory
+            files = case[2]  # files in the direcotry
+
+            # relative_path is the path of the directory
+            # currently running in the os.walk on the
+            # remote server relative to remote_dir
+            relative_path = self.stripslashes(path.replace(self.stripslashes(self.local_dir), "", 1))
+
+            self.connection.cwd(self.remote_dir + relative_path)  # Change working directory to dir in os.walk
+
+            # Make all the directories in current folder
+            # on remote. Files in those directories will
+            # be transferred as we sail through os.walk
+            for directory in dirs:
+                try:
+                    self.connection.mkd(directory)
+                except Exception:
+                    pass  # If directory exists, program will hit the error and not create new
+
+            # Upload all the files in current directory.
+            # As we sail through os.walk, we cover all
+            # the directories and upload the files in them.
+            for f in files:
+                try:
+                    self.connection.delete(f)
+                except Exception:
+                    pass  # If file exists, program will delete it. Else hit error.
+
+                # Upload file
+                self.connection.storbinary("STOR " + f, open(path + "/" + f, "rb"))
+
+            # Files uploaded
+            # Those files and dirs which are
+            # not on local but are on remote
+            # will be deleted
+
+            current = self.connection.pwd()
+
+            for elem in self.connection.mlsd():
+                # Elem is every dir+file on remote
+                if elem[0] in ('.', '..'):
+                    continue
+
+                absolute_path = os.path.join(current, elem[0])
+                if absolute_path in self.omit:
+                    continue
+
+                if self.is_dir(elem[0]) and (not elem[0] in dirs):  # If remote is dir, and not present on local
+                    self.delete_dir(elem[0])
+                elif (not self.is_dir(elem[0])) and (
+                not elem[0] in files):  # If remote is file, and not present on local
+                    self.connection.delete(elem[0])
 
 
 class BitBucketClient:
@@ -73,12 +198,15 @@ class BitBucketClient:
         return self.__dir
 
 
-class FTPClient:
+class FtpClient:
     __omit = ''
 
     def __init__(self, local_dir, ftp_path, ftp_host, username, password):
-        self.__local = FsTarget(local_dir)
-        self.__remote = FtpTarget(ftp_path, ftp_host, 21, username, password)
+        self.__local_dir = local_dir
+        self.__ftp_path = ftp_path
+        self.__ftp_host = ftp_host
+        self.__username = username
+        self.__password = password
 
         git_ignore_path = os.path.join(local_dir, '.gitignore')
         if os.path.isfile(git_ignore_path):
@@ -92,13 +220,14 @@ class FTPClient:
         for line in lines:
             path = line.strip()
             if path[0] != '#':
-                ignores.append(line.strip())
-        return ",".join(ignores)
+                ignores.append(self.__ftp_path + '/' + line.strip().lstrip('/'))
+        return ignores
 
     def push_files(self):
-        opts = {"verbose": 3, "dry_run": False, 'omit': self.__omit, "delete_unmatched": True}
-        synchronizer = CustomUploadSynchronizer(self.__local, self.__remote, opts)
-        synchronizer.run()
+        ftp_sync = FtpSynchronizer(self.__ftp_host, 21, self.__username, self.__password, self.__local_dir,
+                                   self.__ftp_path, self.__omit)
+
+        ftp_sync.sync()
 
 
 class MailClient:
