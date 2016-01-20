@@ -7,12 +7,6 @@ from django.core.exceptions import ImproperlyConfigured
 
 import git
 
-import fnmatch
-from ftpsync.targets import FsTarget
-from ftpsync.ftp_target import FtpTarget
-from ftpsync.synchronizers import UploadSynchronizer
-from ftpsync.targets import DirMetadata
-
 from .models import Listeners
 
 
