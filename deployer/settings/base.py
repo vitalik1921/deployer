@@ -140,10 +140,10 @@ GIT_USER_PASS = get_secret("GIT_USER_PASS", BASE_DIR)
 
 
 #Email settings
-EMAIL_BACKEND = 'django_smtp_ssl.SSLEmailBackend'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_HOST_PASSWORD = 'test'
-EMAIL_HOST_USER = 'test@gmail.com'
+EMAIL_HOST_USER = get_secret("EMAIL_HOST_USER", BASE_DIR)
+EMAIL_HOST_PASSWORD = get_secret("EMAIL_HOST_PASSWORD", BASE_DIR)
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 

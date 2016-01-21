@@ -2,12 +2,11 @@ import os
 import ftplib
 import shutil
 
-from django.core.mail import send_mail
 from django.core.exceptions import ImproperlyConfigured
 
 import git
 
-from .models import Listeners
+from .models import Listeners, Emails
 
 
 class FtpSynchronizer():
@@ -202,11 +201,3 @@ class FtpClient:
                                    self.__ftp_path, self.__omit)
 
         ftp_sync.sync()
-
-
-class MailClient:
-    def __init__(self):
-        pass
-
-    def send_email(self):
-        pass

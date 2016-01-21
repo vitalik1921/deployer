@@ -3,8 +3,9 @@ import uuid
 from django.db import models
 from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 
-from deployer.settings.base import GIT_USER_NAME, GIT_USER_PASS
+from deployer.settings.base import GIT_USER_NAME, GIT_USER_PASS, EMAIL_HOST_USER
 
 
 class Listeners(models.Model):
@@ -33,11 +34,12 @@ class Listeners(models.Model):
     def clean_fields(self, exclude=None):
         if self.enable_development:
             if not self.development_branch or not self.development_server or not self.development_server_path:
-                raise ValidationError('You should fill development_branch, development_server, development_server_path ')
+                raise ValidationError(
+                    'Missed fields development_branch, development_server, development_server_path ')
 
         if self.enable_production:
             if not self.production_branch or not self.production_server or not self.production_server_path:
-                raise ValidationError('You should fill production_branch, production_server, production_server_path ')
+                raise ValidationError('Missed fields production_branch, production_server, production_server_path ')
 
         self.development_server_path = self.development_server_path.rstrip('/')
         self.production_server_path = self.production_server_path.rstrip('/')
@@ -82,7 +84,7 @@ class FTPServers(models.Model):
 
 class Emails(models.Model):
     name = models.CharField(max_length=150, blank=True)
-    email = models.EmailField(max_length=150, blank=False)
+    email = models.EmailField(max_length=150, blank=False, unique=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if not self.name:
@@ -103,11 +105,30 @@ class Logs(models.Model):
     message = models.TextField()
     reported = models.BooleanField()
 
+    def generate_short_log(self):
+        log = Logs.objects.filter(listener_id=self.listener.listener_uuid).order_by('datetime').reverse()[:20]
+        text = ''
+        for item in log:
+            text += "({}) {} \n".format(item.datetime, item.message)
+        return text
+
+    def send_report(self, listener, subject, message):
+        emails = listener.emails.all()
+        recipients = []
+        for item in emails:
+            recipients.append(item.email)
+
+        short_log = self.generate_short_log()
+        message = "Hello! You have new events. \n\n\n {} \n\n Last 20 events: \n\n {}".format(message, short_log)
+
+        send_mail(subject, message, EMAIL_HOST_USER, recipients, fail_silently=False)
+
     def save_base(self, raw=False, force_insert=False, force_update=False, using=None, update_fields=None):
-        if self.reported:
-            # TODO: Send email
-            pass
         super().save_base(raw, force_insert, force_update, using, update_fields)
+        if self.reported:
+            self.send_report(self.listener,
+                             "Deployer Report #{} of listener {}, {}".format(self.id, self.listener, self.datetime),
+                             self.message)
 
     @classmethod
     def create_record(cls, listener, message, report=False):

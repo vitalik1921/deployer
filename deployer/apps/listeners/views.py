@@ -2,9 +2,10 @@ import json
 
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
+from django.core.mail import send_mail
 
 from .models import Listeners, Logs
-from .utils import BitBucketClient, FtpClient, MailClient
+from .utils import BitBucketClient, FtpClient
 
 
 def add_log_record(message='', listener=None, report=False):
@@ -53,7 +54,8 @@ def handle_webhook(request, listener_uuid=None):
             repo.clone_branch_to_temp(commit_branch)
             repo_dir = repo.temp_dir
         except Exception as e:
-            return HttpResponseBadRequest(add_log_record("!!! Cloning runtime error: {}".format(e.args), listener, True))
+            return HttpResponseBadRequest(
+                add_log_record("!!! Cloning runtime error: {}".format(e.args), listener, True))
 
         add_log_record("Cloned branch <{}>".format(commit_branch), listener)
 
@@ -76,7 +78,9 @@ def handle_webhook(request, listener_uuid=None):
         finally:
             del repo
 
-        add_log_record("Pushed to <{}>".format(push_server_name), listener)
+        add_log_record("Repository <{}> with branch <{}> was pushed to <{}> successfully"
+                       .format(listener.repository_slug, commit_branch, push_server_name), listener, True)
+
         add_log_record(">>> Listener finished for {}".format(listener.repository_slug), listener)
 
         return HttpResponse('Have a nice day :)')
