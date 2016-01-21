@@ -21,8 +21,6 @@ class FtpSynchronizer():
         self.connection = ftplib.FTP()
         self.omit = omit
 
-    # Class initiailized with FTP server paramaters and local directory
-
     # Remove trailing slash
     def stripslashes(self, string):
         if string is "":
@@ -104,35 +102,22 @@ class FtpSynchronizer():
         dest_remote = dest_remote.replace(remote_current, "", 1)
         dest_remote = self.stripslashes(dest_remote)
         self.connection.cwd(dest_remote)
-        # remote working directory = REMOTE DESTINATION
 
-        # Commence os.walk and transfer
-        # os.walk is a way to cover all the files and directories
-        # on local machine recursively
         for case in os.walk(self.local_dir):
             path = case[0]  # absolute path
             dirs = case[1]  # directories in the directory
             files = case[2]  # files in the direcotry
 
-            # relative_path is the path of the directory
-            # currently running in the os.walk on the
-            # remote server relative to remote_dir
             relative_path = self.stripslashes(path.replace(self.stripslashes(self.local_dir), "", 1))
 
             self.connection.cwd(self.remote_dir + relative_path)  # Change working directory to dir in os.walk
 
-            # Make all the directories in current folder
-            # on remote. Files in those directories will
-            # be transferred as we sail through os.walk
             for directory in dirs:
                 try:
                     self.connection.mkd(directory)
                 except Exception:
                     pass  # If directory exists, program will hit the error and not create new
 
-            # Upload all the files in current directory.
-            # As we sail through os.walk, we cover all
-            # the directories and upload the files in them.
             for f in files:
                 try:
                     self.connection.delete(f)
@@ -141,11 +126,6 @@ class FtpSynchronizer():
 
                 # Upload file
                 self.connection.storbinary("STOR " + f, open(path + "/" + f, "rb"))
-
-            # Files uploaded
-            # Those files and dirs which are
-            # not on local but are on remote
-            # will be deleted
 
             current = self.connection.pwd()
 
@@ -161,7 +141,7 @@ class FtpSynchronizer():
                 if self.is_dir(elem[0]) and (not elem[0] in dirs):  # If remote is dir, and not present on local
                     self.delete_dir(elem[0])
                 elif (not self.is_dir(elem[0])) and (
-                not elem[0] in files):  # If remote is file, and not present on local
+                        not elem[0] in files):  # If remote is file, and not present on local
                     self.connection.delete(elem[0])
 
 
@@ -204,9 +184,9 @@ class FtpClient:
 
         git_ignore_path = os.path.join(local_dir, '.gitignore')
         if os.path.isfile(git_ignore_path):
-            self.__omit = self.parse_git_ignore(git_ignore_path, local_dir)
+            self.__omit = self.parse_git_ignore(git_ignore_path)
 
-    def parse_git_ignore(self, git_ignore_path, local_dir):
+    def parse_git_ignore(self, git_ignore_path):
         with open(git_ignore_path, 'r') as git_ignore_file:
             lines = git_ignore_file.readlines()
 

@@ -2,6 +2,7 @@ import uuid
 
 from django.db import models
 from django.contrib.sites.models import Site
+from django.core.exceptions import ValidationError
 
 from deployer.settings.base import GIT_USER_NAME, GIT_USER_PASS
 
@@ -11,20 +12,40 @@ class Listeners(models.Model):
     repository_url = models.CharField(max_length=500, blank=True, editable=False)
     repository_slug = models.CharField(max_length=255, blank=False, unique=True)
     repository_owner = models.CharField(max_length=150, blank=False)
-    development_branch = models.CharField(max_length=150, blank=False, default='master')
-    development_server = models.ForeignKey('FTPServers', related_name='+')
-    development_server_path = models.CharField(max_length=500, blank=False)
-    production_branch = models.CharField(max_length=150, blank=False, default='production')
-    production_server = models.ForeignKey('FTPServers', related_name='+')
-    production_server_path = models.CharField(max_length=500, blank=False)
+    enable_development = models.BooleanField()
+    development_branch = models.CharField(max_length=150, blank=True, default='master')
+    development_server = models.ForeignKey('FTPServers', related_name='+', blank=True)
+    development_server_path = models.CharField(max_length=500, blank=True)
+    enable_production = models.BooleanField()
+    production_branch = models.CharField(max_length=150, blank=True, default='production')
+    production_server = models.ForeignKey('FTPServers', related_name='+', blank=True)
+    production_server_path = models.CharField(max_length=500, blank=True)
     emails = models.ManyToManyField('Emails', related_name='+', blank=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
         if not self.repository_url:
             self.repository_url = 'https://{}:{}@bitbucket.org/{}/{}.git'.format(GIT_USER_NAME, GIT_USER_PASS,
-                                                                        self.repository_owner, self.repository_slug)
+                                                                                 self.repository_owner,
+                                                                                 self.repository_slug)
 
         super().save(force_insert, force_update, using, update_fields)
+
+    def clean_fields(self, exclude=None):
+        if self.enable_development:
+            if not self.development_branch or not self.development_server or not self.development_server_path:
+                raise ValidationError('You should fill development_branch, development_server, development_server_path ')
+
+        if self.enable_production:
+            if not self.production_branch or not self.production_server or not self.production_server_path:
+                raise ValidationError('You should fill production_branch, production_server, production_server_path ')
+
+        self.development_server_path = self.development_server_path.rstrip('/')
+        self.production_server_path = self.production_server_path.rstrip('/')
+
+        return super().clean_fields(exclude)
+
+    def get_absolute_url(self):
+        return self.repository_url
 
     def get_full_url(self):
         from django.core.urlresolvers import reverse

@@ -15,9 +15,11 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
+from django.http import HttpResponseRedirect
 from .apps.listeners.urls import urlpatterns as listeners_urls
 
 urlpatterns = [
+    url(r'^$', lambda x: HttpResponseRedirect('/admin')),
     url(r'^admin/', admin.site.urls),
     url(r'^webhook/', include(listeners_urls)),
 ]
