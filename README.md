@@ -1,4 +1,4 @@
-# ${1:Deployer }
+# Deployer
 Sync repository from BitBucket to FTP directory, using webhooks 2.0
 
 ## Installation
