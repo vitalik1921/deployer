@@ -1,12 +1,16 @@
 import os
 import ftplib
 import shutil
+import atexit
+import queue
+import threading
 
+from django.core.mail import mail_admins
 from django.core.exceptions import ImproperlyConfigured
 
 import git
 
-from .models import Listeners, Emails
+from .models import Listeners
 
 
 class FtpSynchronizer():
@@ -201,3 +205,36 @@ class FtpClient:
                                    self.__ftp_path, self.__omit)
 
         ftp_sync.sync()
+
+
+def _worker():
+    while True:
+        func, args, kwargs = _queue.get()
+        try:
+            func(*args, **kwargs)
+        except:
+            import traceback
+            details = traceback.format_exc()
+            mail_admins('Background process exception', details)
+        finally:
+            _queue.task_done()  # so we can join at exit
+
+
+def postpone(func):
+    def decorator(*args, **kwargs):
+        _queue.put((func, args, kwargs))
+
+    return decorator
+
+
+_queue = queue.Queue()
+_thread = threading.Thread(target=_worker)
+_thread.daemon = True
+_thread.start()
+
+
+def _cleanup():
+    _queue.join()  # so we don't exit too soon
+
+
+atexit.register(_cleanup)
