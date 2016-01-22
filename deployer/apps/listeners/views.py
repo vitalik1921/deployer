@@ -23,7 +23,7 @@ def handle_webhook(request, listener_uuid=None):
         except Exception as e:
             return HttpResponseBadRequest("Cannot parse JSON data: {}".format(e.args))
 
-        repository_slug = data['repository']
+        repository_slug = data['repository']['name']
 
         try:
             listener = Listeners.objects.get(pk=listener_uuid)
@@ -35,51 +35,61 @@ def handle_webhook(request, listener_uuid=None):
             return HttpResponseBadRequest(
                 add_log_record("!!! There is not listener for {}".format(repository_slug), listener, True))
 
-        # is that commit to branch?
-        if data['push']['new']['type'] != "branch" or data['push']['new']['target']['type'] != "commit":
-            return HttpResponseBadRequest(add_log_record("!!! This is not commit to branch", listener, True))
-        else:
-            commit_branch = data['push']['new']['name']
+        # what is the changes?
+        changes = data['push']['changes']
+        branches = []
+        for change in changes:
+            if change['new']['type'] == 'branch':
+                branches.append(change['new']['name'])
 
-        if listener.development_branch == commit_branch:
-            push_type = 'development'
-        elif listener.production_branch == commit_branch:
-            push_type = 'production'
-        else:
-            return HttpResponseBadRequest(add_log_record("!!! Branch is not configured properly", listener, True))
+        push_types = []
+        if listener.development_branch in branches and listener.enable_development:
+            push_types.append('development')
+        if listener.production_branch in branches and listener.enable_production:
+            push_types.append('production')
 
-        # clone repository
-        repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
-        try:
-            repo.clone_branch_to_temp(commit_branch)
-            repo_dir = repo.temp_dir
-        except Exception as e:
+        if len(push_types) == 0:
             return HttpResponseBadRequest(
-                add_log_record("!!! Cloning runtime error: {}".format(e.args), listener, True))
+                add_log_record("!!! There is no changes for development or production branches", listener, True))
 
-        add_log_record("Cloned branch <{}>".format(commit_branch), listener)
+        for push_type in push_types:
+            if push_type == 'development':
+                branch = listener.development_branch
+                server = listener.development_server
+                server_path = listener.development_server_path
+            elif push_type == 'production':
+                branch = listener.production_branch
+                server = listener.production_server
+                server_path = listener.production_server_path
 
-        # push new files to ftp server
-        ftp_client, push_server_name = None, None
-        if push_type == 'development':
-            ftp_client = FtpClient(repo_dir, listener.development_server_path, listener.development_server.host,
-                                   listener.development_server.username, listener.development_server.password)
-            push_server_name = listener.development_server.name
-        elif push_type == 'production':
-            ftp_client = FtpClient(repo_dir, listener.production_server_path, listener.production_server.host,
-                                   listener.production_server.username, listener.production_server.password)
-            push_server_name = listener.production_server.name
+            # clone repository
+            repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
+            try:
+                repo.clone_branch_to_temp(branch)
+                repo_dir = repo.temp_dir
+            except Exception as e:
+                return HttpResponseBadRequest(
+                    add_log_record("!!! Cloning runtime error: {}".format(e.args), listener, True))
 
-        try:
-            ftp_client.push_files()
-        except Exception as e:
-            return HttpResponseBadRequest(
-                add_log_record("!!! FTP sync ({}) runtime error: {}".format(push_server_name, e.args), listener, True))
-        finally:
-            del repo
+            add_log_record("Cloned branch <{}>".format(branch), listener)
 
-        add_log_record("Repository <{}> with branch <{}> was pushed to <{}> successfully"
-                       .format(listener.repository_slug, commit_branch, push_server_name), listener, True)
+            # push new files to ftp server
+            ftp_client = None
+            if push_type == 'development':
+                ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
+            elif push_type == 'production':
+                ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
+
+            try:
+                ftp_client.push_files()
+            except Exception as e:
+                return HttpResponseBadRequest(
+                    add_log_record("!!! FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
+            finally:
+                del repo
+
+            add_log_record("Repository <{}> with branch <{}> was pushed to <{}> successfully"
+                           .format(listener.repository_slug, branch, server.name), listener, True)
 
         add_log_record(">>> Listener finished for {}".format(listener.repository_slug), listener)
 
