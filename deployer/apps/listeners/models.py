@@ -121,7 +121,10 @@ class Logs(models.Model):
         short_log = self.generate_short_log()
         message = "Hello! You have new events. \n\n\n {} \n\n Last 20 events: \n\n {}".format(message, short_log)
 
-        send_mail(subject, message, EMAIL_HOST_USER, recipients, fail_silently=False)
+        try:
+            send_mail(subject, message, EMAIL_HOST_USER, recipients, fail_silently=False)
+        finally:
+            pass
 
     def save_base(self, raw=False, force_insert=False, force_update=False, using=None, update_fields=None):
         super().save_base(raw, force_insert, force_update, using, update_fields)
