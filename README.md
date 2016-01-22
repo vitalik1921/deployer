@@ -2,23 +2,23 @@
 Sync repository from BitBucket to FTP directory, using webhooks 2.0
 
 ## Installation
-* Clone Repository
-* Open settings/base.py and change DB details. By default it uses PostgreSQL.
-* Create secrets.json in settings directory.
-```json
-{
-  "SECRET_KEY" : "your_secret_key",
-  "GIT_USER_NAME" : "git_user_name",
-  "GIT_USER_PASS" : "git_user_pass",
-  "EMAIL_HOST_USER" : "your_email@domain.com",
-  "EMAIL_HOST_PASSWORD" : "your_email_password"
-}
-```
+1. Clone Repository
+2. Open settings/base.py and change DB details. By default it uses PostgreSQL.
+3. Create secrets.json in settings directory.
+  ```json
+  {
+    "SECRET_KEY" : "your_secret_key",
+    "GIT_USER_NAME" : "git_user_name",
+    "GIT_USER_PASS" : "git_user_pass",
+    "EMAIL_HOST_USER" : "your_email@domain.com",
+    "EMAIL_HOST_PASSWORD" : "your_email_password"
+  }
+  ```
 
-* pip install -r requirements/base.txt
-* manage.py makemigrations
-* manage.py migrate
-* Run.
+4. pip install -r requirements/base.txt
+5. python manage.py makemigrations
+6. python manage.py migrate
+7. Run.
 
 ### Requirements
 * Python 3.4.3
