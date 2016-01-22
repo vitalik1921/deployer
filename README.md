@@ -2,9 +2,9 @@
 Sync repository from BitBucket to FTP directory, using webhooks 2.0
 
 ## Installation
-1. Clone Repository
-2. Open settings/base.py and change DB details. By default it uses PostgreSQL.
-3. Create secrets.json in settings directory.
+* Clone Repository
+* Open settings/base.py and change DB details. By default it uses PostgreSQL.
+* Create secrets.json in settings directory.
 ```json
 {
   "SECRET_KEY" : "your_secret_key",
@@ -15,12 +15,13 @@ Sync repository from BitBucket to FTP directory, using webhooks 2.0
 }
 ```
 
-4. pip install -r requirements/base.txt
-5. manage.py makemigrations
-6. manage.py migrate
-7. Run.
+* pip install -r requirements/base.txt
+* manage.py makemigrations
+* manage.py migrate
+* Run.
 
 ### Requirements
+* Python 3.4.3
 * Django==1.9.1
 * GitPython==1.0.1
 * gitdb==0.6.4
