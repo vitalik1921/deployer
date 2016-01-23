@@ -1,5 +1,5 @@
 # Deployer
-Sync repository from BitBucket to FTP directory, using webhooks 2.0
+Sync repository from BitBucket with FTP directory, using webhooks 2.0
 
 ## Installation
 1. Clone Repository
