@@ -66,7 +66,7 @@ def handle_webhook(request, listener_uuid=None):
         try:
             repository_slug = data['repository']['name']
         except Exception as e:
-            return HttpResponseBadRequest('[ !!! ] Request is con properly configured : {}'.format(e.args))
+            return HttpResponseBadRequest('[ !!! ] Request is not properly configured : {}'.format(e.args))
 
         try:
             listener = Listeners.objects.get(pk=listener_uuid)
