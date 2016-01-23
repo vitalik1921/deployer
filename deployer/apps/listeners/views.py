@@ -25,6 +25,8 @@ def pull_and_push(listener, push_types):
             server = listener.production_server
             server_path = listener.production_server_path
 
+        add_log_record("[BEGIN] Task execution was started for <{}>".format(listener.repository_slug), listener)
+
         # clone repository
         repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
         try:
@@ -32,9 +34,9 @@ def pull_and_push(listener, push_types):
             repo_dir = repo.temp_dir
         except Exception as e:
             return HttpResponseBadRequest(
-                add_log_record("!!! Cloning runtime error: {}".format(e.args), listener, True))
+                add_log_record("[ !!! ] Cloning runtime error: {}".format(e.args), listener, True))
 
-        add_log_record("Cloned branch <{}>".format(branch), listener)
+        add_log_record("[  *  ] Cloned branch <{}>".format(branch), listener)
 
         # push new files to ftp server
         ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
@@ -42,14 +44,14 @@ def pull_and_push(listener, push_types):
             ftp_client.push_files()
         except Exception as e:
             return HttpResponseBadRequest(
-                add_log_record("!!! FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
+                add_log_record("[ !!! ] FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
         finally:
             del repo
 
-    add_log_record("Repository <{}> with branch <{}> was pushed to <{}> successfully"
-                   .format(listener.repository_slug, branch, server.name), listener, True)
+        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully"
+                       .format(listener.repository_slug, branch, server.name), listener)
 
-    add_log_record(">>> Listener finished for {}".format(listener.repository_slug), listener)
+        add_log_record("[ END ] Task execution was ended for <{}>".format(listener.repository_slug), listener, True)
 
 
 @csrf_exempt
@@ -59,22 +61,21 @@ def handle_webhook(request, listener_uuid=None):
         try:
             data = json.loads(request.body.decode('utf-8'))
         except Exception as e:
-            return HttpResponseBadRequest("Cannot parse JSON data: {}".format(e.args))
+            return HttpResponseBadRequest("[ !!! ] Cannot parse JSON data: {}".format(e.args))
 
         try:
             repository_slug = data['repository']['name']
         except Exception as e:
-            return HttpResponseBadRequest('Request is con properly configured : {}'.format(e.args))
+            return HttpResponseBadRequest('[ !!! ] Request is con properly configured : {}'.format(e.args))
 
         try:
             listener = Listeners.objects.get(pk=listener_uuid)
-            add_log_record(">>> Listener started for {}".format(listener.repository_slug), listener)
         except Listeners.DoesNotExist:
-            return HttpResponseBadRequest('Wrong UUID')
+            return HttpResponseBadRequest('[ !!! ] Wrong UUID')
 
         if listener.repository_slug != repository_slug:
             return HttpResponseBadRequest(
-                add_log_record("!!! There is not listener for {}".format(repository_slug), listener, True))
+                add_log_record("[ !!! ] There is not listener for {}".format(repository_slug), listener, True))
 
         # what is the changes?
         changes = data['push']['changes']
@@ -91,10 +92,10 @@ def handle_webhook(request, listener_uuid=None):
 
         if len(push_types) == 0:
             return HttpResponseBadRequest(
-                add_log_record("!!! There is no changes for development or production branches", listener, True))
+                add_log_record("[  !  ] There is no changes for development or production branches", listener, True))
 
         pull_and_push(listener, push_types)
         return HttpResponse('Have a nice day :)')
 
     else:
-        return HttpResponseBadRequest("This is not a POST request")
+        return HttpResponseBadRequest("[ !!! ] This is not a POST request")
