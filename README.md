@@ -18,7 +18,8 @@ Sync repository from BitBucket to FTP directory, using webhooks 2.0
 4. pip install -r requirements/base.txt
 5. python manage.py makemigrations
 6. python manage.py migrate
-7. Run.
+7. python manage.py createsuperuser
+8. Run.
 
 ### Requirements
 * Python 3.4.3
