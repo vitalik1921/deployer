@@ -37,11 +37,7 @@ def pull_and_push(listener, push_types):
         add_log_record("Cloned branch <{}>".format(branch), listener)
 
         # push new files to ftp server
-        ftp_client = None
-        if push_type == 'development':
-            ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
-        elif push_type == 'production':
-            ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
+        ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
         try:
             ftp_client.push_files()
         except Exception as e:

@@ -150,11 +150,12 @@ class FtpSynchronizer():
 
 class BitBucketClient:
     def __init__(self, repository_slug, listener_uuid):
-        temp_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
         listener = Listeners.objects.get(pk=listener_uuid)
+
         self.__repo_url = listener.repository_url
-        self.__dir = os.path.join(temp_root_dir, repository_slug)
-        self.__repo = git.Repo.init()
+        self.__temp_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
+        self.__dir = os.path.join(self.__temp_root_dir, repository_slug)
+        self.__repo = git.Repo.init(self.__temp_root_dir)
 
     def __del__(self):
         self.clear_temp()
@@ -164,11 +165,11 @@ class BitBucketClient:
             self.__repo.clone_from(self.__repo_url, self.__dir, branch=branch)
         except Exception as e:
             self.clear_temp()
-            print(e.args)
-            raise ImproperlyConfigured()
+            raise ImproperlyConfigured(e.args)
 
     def clear_temp(self):
-        shutil.rmtree(self.__dir)
+        if os.path.isdir(self.__dir):
+            shutil.rmtree(self.__dir)
 
     @property
     def temp_dir(self):
