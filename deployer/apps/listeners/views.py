@@ -13,6 +13,47 @@ def add_log_record(message='', listener=None, report=False):
     return message
 
 
+@postpone
+def pull_and_push(listener, push_types):
+    for push_type in push_types:
+        if push_type == 'development':
+            branch = listener.development_branch
+            server = listener.development_server
+            server_path = listener.development_server_path
+        elif push_type == 'production':
+            branch = listener.production_branch
+            server = listener.production_server
+            server_path = listener.production_server_path
+
+        add_log_record("[BEGIN] Task execution was started for <{}>".format(listener.repository_slug), listener)
+
+        # clone repository
+        try:
+            repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
+            repo.clone_branch_to_temp(branch)
+            repo_dir = repo.temp_dir
+        except Exception as e:
+            return HttpResponseBadRequest(
+                add_log_record("[ !!! ] Cloning runtime error: {}".format(e.args), listener, True))
+
+        add_log_record("[  *  ] Cloned branch <{}>".format(branch), listener)
+
+        # push new files to ftp server
+        ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
+        try:
+            ftp_client.push_files()
+        except Exception as e:
+            return HttpResponseBadRequest(
+                add_log_record("[ !!! ] FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
+        finally:
+            del repo
+
+        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully"
+                       .format(listener.repository_slug, branch, server.name), listener)
+
+        add_log_record("[ END ] Task execution was ended for <{}>".format(listener.repository_slug), listener, True)
+
+
 @csrf_exempt
 def handle_webhook(request, listener_uuid=None):
     if request.method == 'POST':
@@ -53,44 +94,7 @@ def handle_webhook(request, listener_uuid=None):
             return HttpResponseBadRequest(
                 add_log_record("[  !  ] There is no changes for development or production branches", listener, True))
 
-        for push_type in push_types:
-            if push_type == 'development':
-                branch = listener.development_branch
-                server = listener.development_server
-                server_path = listener.development_server_path
-            elif push_type == 'production':
-                branch = listener.production_branch
-                server = listener.production_server
-                server_path = listener.production_server_path
-
-            add_log_record("[BEGIN] Task execution was started for <{}>".format(listener.repository_slug), listener)
-
-            # clone repository
-            try:
-                repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
-                repo.clone_branch_to_temp(branch)
-                repo_dir = repo.temp_dir
-            except Exception as e:
-                return HttpResponseBadRequest(
-                    add_log_record("[ !!! ] Cloning runtime error: {}".format(e.args), listener, True))
-
-            add_log_record("[  *  ] Cloned branch <{}>".format(branch), listener)
-
-            # push new files to ftp server
-            ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
-            try:
-                ftp_client.push_files()
-            except Exception as e:
-                return HttpResponseBadRequest(
-                    add_log_record("[ !!! ] FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
-            finally:
-                del repo
-
-            add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully"
-                           .format(listener.repository_slug, branch, server.name), listener)
-
-            add_log_record("[ END ] Task execution was ended for <{}>".format(listener.repository_slug), listener, True)
-
+        pull_and_push(listener, push_types)
         return HttpResponse('Have a nice day :)')
 
     else:
