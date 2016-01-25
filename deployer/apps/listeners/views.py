@@ -28,8 +28,8 @@ def pull_and_push(listener, push_types):
         add_log_record("[BEGIN] Task execution was started for <{}>".format(listener.repository_slug), listener)
 
         # clone repository
-        repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
         try:
+            repo = BitBucketClient(listener.repository_slug, listener.listener_uuid)
             repo.clone_branch_to_temp(branch)
             repo_dir = repo.temp_dir
         except Exception as e:
