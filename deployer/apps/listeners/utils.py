@@ -9,6 +9,7 @@ from django.core.mail import mail_admins
 from django.core.exceptions import ImproperlyConfigured
 
 import git
+from git.exc import GitCommandNotFound
 
 from .models import Listeners
 
@@ -155,7 +156,10 @@ class BitBucketClient:
         self.__repo_url = listener.repository_url
         self.__temp_root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
         self.__dir = os.path.join(self.__temp_root_dir, repository_slug)
-        self.__repo = git.Repo.init(self.__temp_root_dir)
+        try:
+            self.__repo = git.Repo.init(self.__temp_root_dir)
+        except GitCommandNotFound:
+            raise GitCommandNotFound('git was not founded in sys environment')
 
     def __del__(self):
         self.clear_temp()
