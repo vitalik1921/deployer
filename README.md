@@ -3,8 +3,7 @@ Sync repository from BitBucket with FTP directory, using webhooks 2.0
 
 ## Installation
 1. Clone Repository
-2. Open settings/base.py and change DB details. By default it uses PostgreSQL.
-3. Create secrets.json in settings directory.
+2. Create secrets.json in settings directory.
   ```json
   {
     "SECRET_KEY" : "your_secret_key",
