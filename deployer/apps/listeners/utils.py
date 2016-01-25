@@ -159,7 +159,8 @@ class BitBucketClient:
         try:
             self.__repo = git.Repo.init(self.__temp_root_dir)
         except GitCommandNotFound:
-            raise GitCommandNotFound('git was not founded in sys environment')
+            raise GitCommandNotFound(
+                'git was not founded in sys environment: {}'.format(os.environ['GIT_PYTHON_GIT_EXECUTABLE']))
 
     def __del__(self):
         self.clear_temp()
