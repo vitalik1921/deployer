@@ -159,7 +159,7 @@ class BitBucketClient:
         try:
             self.__repo = git.Repo.init(self.__temp_root_dir)
         except GitCommandNotFound:
-            raise GitCommandNotFound('git is not detected by path {}'.format(git.Git.git_exec_name))
+            raise GitCommandNotFound('git is not detected by path <{}>'.format(git.Git.git_exec_name))
 
     def __del__(self):
         self.clear_temp()
