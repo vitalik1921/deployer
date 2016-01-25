@@ -116,6 +116,8 @@ class FtpSynchronizer():
 
             self.connection.cwd(self.remote_dir + relative_path)  # Change working directory to dir in os.walk
 
+            # TODO: upload only new files, skip .git
+
             for directory in dirs:
                 try:
                     self.connection.mkd(directory)
