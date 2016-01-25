@@ -4,6 +4,7 @@ import shutil
 import atexit
 import queue
 import threading
+import time
 
 from django.core.mail import mail_admins
 from django.core.exceptions import ImproperlyConfigured
@@ -112,18 +113,27 @@ class FtpSynchronizer():
             dirs = case[1]  # directories in the directory
             files = case[2]  # files in the direcotry
 
+            current_directory = path.split(os.path.sep)[-1]
+            if current_directory == '.git':
+                continue
+
             relative_path = self.stripslashes(path.replace(self.stripslashes(self.local_dir), "", 1))
+            directories = path.split(os.path.sep)
+            if '.git' in directories:
+                continue
 
             self.connection.cwd(self.remote_dir + relative_path)  # Change working directory to dir in os.walk
 
-            # TODO: upload only new files, skip .git
-
+            # create directories
             for directory in dirs:
+                if directory == '.git':
+                    continue
                 try:
                     self.connection.mkd(directory)
                 except Exception:
                     pass  # If directory exists, program will hit the error and not create new
 
+            # create files
             for f in files:
                 try:
                     self.connection.delete(f)
