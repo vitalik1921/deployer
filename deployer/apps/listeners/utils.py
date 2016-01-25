@@ -114,14 +114,16 @@ class FtpSynchronizer():
             files = case[2]  # files in the direcotry
 
             relative_path = self.stripslashes(path.replace(self.stripslashes(self.local_dir), "", 1))
-            # directories = path.split(os.path.sep)
-            # if '.git' in directories:
-            #     continue
+            directories = path.split(os.path.sep)
+            if '.git' in directories:
+                continue
 
             self.connection.cwd(self.remote_dir + relative_path)  # Change working directory to dir in os.walk
 
             # create directories
             for directory in dirs:
+                if directory == '.git':
+                    continue
                 try:
                     self.connection.mkd(directory)
                 except Exception:
