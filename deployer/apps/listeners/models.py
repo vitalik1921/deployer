@@ -15,11 +15,11 @@ class Listeners(models.Model):
     repository_owner = models.CharField(max_length=150, blank=False)
     enable_development = models.BooleanField()
     development_branch = models.CharField(max_length=150, blank=True, default='master')
-    development_server = models.ForeignKey('FTPServers', related_name='+', blank=True)
+    development_server = models.ForeignKey('FTPServers', related_name='+', blank=True, null=True)
     development_server_path = models.CharField(max_length=500, blank=True)
     enable_production = models.BooleanField()
     production_branch = models.CharField(max_length=150, blank=True, default='production')
-    production_server = models.ForeignKey('FTPServers', related_name='+', blank=True)
+    production_server = models.ForeignKey('FTPServers', related_name='+', blank=True, null=True)
     production_server_path = models.CharField(max_length=500, blank=True)
     emails = models.ManyToManyField('Emails', related_name='+', blank=True)
 
