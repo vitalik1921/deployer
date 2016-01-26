@@ -25,7 +25,6 @@ Sync repository from BitBucket with FTP directory, using webhooks 2.0
 * Django==1.9.1
 * GitPython==1.0.1
 * gitdb==0.6.4
-* psycopg2==2.6.1
 * smmap==0.9.0
 
 ## Usage
