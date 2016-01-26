@@ -24,7 +24,7 @@ class FtpSynchronizer():
         self.remote_dir = remote_dir
         self.connection = ftplib.FTP()
         self.connection.set_pasv(True)
-        self.connection.set_debuglevel(2)
+        # self.connection.set_debuglevel(2)
         self.omit = omit
 
     # Remove trailing slash
@@ -49,18 +49,6 @@ class FtpSynchronizer():
     def connect(self):
         self.connection.connect(self.ftp_host, self.ftp_port)
         self.connection.login(self.ftp_user, self.ftp_pass)
-
-    # Check if remote object is a directory
-    def is_dir(self, dirname):
-        current = self.connection.pwd()
-        try:
-            self.connection.cwd(dirname)
-            is_dir = True
-            self.connection.cwd(current)
-        except Exception:
-            is_dir = False
-
-        return is_dir
 
     # Recursively delete remote directory
     def delete_dir(self, dirname):
@@ -151,9 +139,9 @@ class FtpSynchronizer():
                 if absolute_path in self.omit:
                     continue
 
-                if self.is_dir(elem[0]) and (not elem[0] in dirs):  # If remote is dir, and not present on local
+                if elem[1]['type'] == 'dir' and (not elem[0] in dirs):  # If remote is dir, and not present on local
                     self.delete_dir(elem[0])
-                elif (not self.is_dir(elem[0])) and (
+                elif (elem[1]['type'] != 'dir') and (
                         not elem[0] in files):  # If remote is file, and not present on local
                     self.connection.delete(elem[0])
 
