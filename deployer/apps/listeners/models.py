@@ -24,10 +24,9 @@ class Listeners(models.Model):
     emails = models.ManyToManyField('Emails', related_name='+', blank=True)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
-        if not self.repository_url:
-            self.repository_url = 'https://{}:{}@bitbucket.org/{}/{}.git'.format(GIT_USER_NAME, GIT_USER_PASS,
-                                                                                 self.repository_owner,
-                                                                                 self.repository_slug)
+        self.repository_url = 'https://{}:{}@bitbucket.org/{}/{}.git'.format(GIT_USER_NAME, GIT_USER_PASS,
+                                                                             self.repository_owner,
+                                                                             self.repository_slug)
 
         super().save(force_insert, force_update, using, update_fields)
 
