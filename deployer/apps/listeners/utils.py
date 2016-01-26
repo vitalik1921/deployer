@@ -162,10 +162,11 @@ class BitBucketClient:
         self.clear_temp()
 
     def clone_branch_to_temp(self, branch):
+        if os.path.isdir(self.__dir):
+            self.clear_temp()
         try:
             self.__repo.clone_from(self.__repo_url, self.__dir, branch=branch)
         except Exception as e:
-            self.clear_temp()
             raise ImproperlyConfigured(e.args)
 
     def clear_temp(self):
