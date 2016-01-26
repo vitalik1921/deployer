@@ -23,6 +23,7 @@ class FtpSynchronizer():
         self.local_dir = local_dir
         self.remote_dir = remote_dir
         self.connection = ftplib.FTP()
+        self.connection.set_pasv(True)
         self.omit = omit
 
     # Remove trailing slash
