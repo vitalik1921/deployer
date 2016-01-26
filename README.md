@@ -32,9 +32,11 @@ Sync repository from BitBucket with FTP directory, using webhooks 2.0
 1. Open 'Sites' and add/change domain name to your current domain.
 2. Open FTPServers and add at FTP server details.
 3. Open Listeners and add Listener, - add Production or Live server (or both). After saving, copy listener URL. 
-To confirm the details press 'View on Site'  - you should see your bitBucket repository.  
-4. Add mailboxes to be able to get reports.
-5. Make some push to check it, you should get confirmation on email if you configured it properly.
+To confirm the details press 'View on Site'  - you should see your bitBucket repository.
+4. Open BitBucket Repository -> Settings -> Webhooks, press Add webhook, insert title and copy listener link, check 
+  'Skip certificate verification' ans save.
+5. Add mailboxes to be able to get reports.
+6. Make some push to check it, you should get confirmation on email if you configured it properly.
 
 
 ## Contributing
