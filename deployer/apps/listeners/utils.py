@@ -4,8 +4,6 @@ import shutil
 import atexit
 import queue
 import threading
-import time
-import datetime
 
 from django.core.mail import mail_admins
 from django.core.exceptions import ImproperlyConfigured
