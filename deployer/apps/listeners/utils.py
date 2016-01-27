@@ -180,6 +180,7 @@ class BitBucketClient:
 
 class FtpClient:
     __omit = ''
+    __ftp_path = ''
 
     def __init__(self, local_dir, ftp_path, ftp_host, username, password):
         self.__local_dir = local_dir
@@ -199,7 +200,7 @@ class FtpClient:
         ignores = []
         for line in lines:
             path = line.strip()
-            if path[0] != '#':
+            if len(path) > 0 and path[0] != '#':
                 ignores.append(self.__ftp_path + '/' + line.strip().strip('/'))
         return ignores
 
