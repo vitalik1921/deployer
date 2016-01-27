@@ -52,6 +52,16 @@ class Listeners(models.Model):
         from django.core.urlresolvers import reverse
         return Site.objects.get_current().domain + reverse('webhook', args={self.listener_uuid})
 
+    def get_development_force_url(self):
+        from django.core.urlresolvers import reverse
+        return Site.objects.get_current().domain + reverse('force_push', kwargs={'listener_uuid': self.listener_uuid,
+                                                                                 'push_type': 'development'})
+
+    def get_production_force_url(self):
+        from django.core.urlresolvers import reverse
+        return Site.objects.get_current().domain + reverse('force_push', kwargs={'listener_uuid': self.listener_uuid,
+                                                                                 'push_type': 'production'})
+
     get_full_url.short_description = 'Listener URL (just for bitbucket)'
 
     def __str__(self):

@@ -99,3 +99,27 @@ def handle_webhook(request, listener_uuid=None):
 
     else:
         return HttpResponseBadRequest("[ !!! ] This is not a POST request")
+
+
+@csrf_exempt
+def force_push(request, listener_uuid=None, push_type=None):
+    if request.method == 'GET':
+
+        try:
+            listener = Listeners.objects.get(pk=listener_uuid)
+        except Listeners.DoesNotExist:
+            return HttpResponseBadRequest('[ !!! ] Wrong UUID')
+
+        # what is the changes?
+        push_types = []
+        if push_type == 'development':
+            push_types.append('development')
+
+        if push_type == 'production':
+            push_types.append('production')
+
+        pull_and_push(listener, push_types)
+        return HttpResponse('Task was scheduled')
+
+    else:
+        return HttpResponseBadRequest("[ !!! ] This is not a GET request")

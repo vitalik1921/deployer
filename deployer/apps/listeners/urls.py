@@ -17,5 +17,6 @@ from django.conf.urls import url
 from . import views
 
 urlpatterns = [
+    url(r'^force/(?P<listener_uuid>.+)-(?P<push_type>.+)$', view=views.force_push, name='force_push'),
     url(r'^(?P<listener_uuid>.+)$', view=views.handle_webhook, name='webhook'),
 ]
