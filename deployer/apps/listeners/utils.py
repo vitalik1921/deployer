@@ -200,7 +200,7 @@ class FtpClient:
         for line in lines:
             path = line.strip()
             if path[0] != '#':
-                ignores.append(self.__ftp_path + '/' + line.strip().lstrip('/'))
+                ignores.append(self.__ftp_path + '/' + line.strip().strip('/'))
         return ignores
 
     def push_files(self):
