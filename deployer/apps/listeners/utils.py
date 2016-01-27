@@ -4,6 +4,8 @@ import shutil
 import atexit
 import queue
 import threading
+import time
+import datetime
 
 from django.core.mail import mail_admins
 from django.core.exceptions import ImproperlyConfigured
@@ -118,15 +120,30 @@ class FtpSynchronizer():
                 except Exception:
                     pass  # If directory exists, program will hit the error and not create new
 
+            # get list of files in current dir
+            remote_file_list = {}
+            file_list_raw = self.connection.mlsd()
+            for file in file_list_raw:
+                if file[1]['type'] == 'file':
+                    self.connection.voidcmd('TYPE I')
+                    remote_file_list[file[0]] = self.connection.size(file[0])
+
             # create files
             for f in files:
-                try:
-                    self.connection.delete(f)
-                except Exception:
-                    pass  # If file exists, program will delete it. Else hit error.
+                file_path = path + "/" + f
+                file_size = os.path.getsize(file_path)
+
+                if f in remote_file_list:
+                    if file_size == remote_file_list[f]:
+                        continue
+                    else:
+                        try:
+                            self.connection.delete(f)
+                        except Exception:
+                            pass  # If file exists, program will delete it. Else hit error.
 
                 # Upload file
-                self.connection.storbinary("STOR " + f, open(path + "/" + f, "rb"))
+                self.connection.storbinary("STOR " + f, open(file_path, "rb"))
 
             current = self.connection.pwd()
 
