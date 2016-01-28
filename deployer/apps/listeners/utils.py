@@ -215,8 +215,8 @@ class FtpClient:
         ignores = []
         for line in lines:
             path = line.strip()
-            if len(path) > 0 and path[0] != '#':
-                ignores.append(self.__ftp_path + '/' + line.strip().strip('/'))
+            if len(path) > 0 and path[0] != '#' and path[0] != '!':
+                ignores.append(self.__ftp_path + '/' + path.strip().strip('/'))
         return ignores
 
     def push_files(self):
