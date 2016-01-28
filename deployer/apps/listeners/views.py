@@ -49,7 +49,7 @@ def pull_and_push(listener, push_types):
         finally:
             del repo
 
-        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully. {} files was loaded"
+        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully. {} files was uploaded"
                        .format(listener.repository_slug, branch, server.name, uploaded_files), listener)
 
         add_log_record("[ END ] Task execution was ended for <{}>".format(listener.repository_slug), listener, True)
