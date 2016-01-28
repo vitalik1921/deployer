@@ -97,6 +97,8 @@ class FtpSynchronizer():
         dest_remote = self.stripslashes(dest_remote)
         self.connection.cwd(dest_remote)
 
+        uploaded_files = 0
+
         for case in os.walk(self.local_dir):
             path = case[0]  # absolute path
             dirs = case[1]  # directories in the directory
@@ -142,6 +144,7 @@ class FtpSynchronizer():
 
                 # Upload file
                 self.connection.storbinary("STOR " + f, open(file_path, "rb"))
+                uploaded_files += 1
 
             current = self.connection.pwd()
 
@@ -159,6 +162,8 @@ class FtpSynchronizer():
                 elif (elem[1]['type'] != 'dir') and (
                         not elem[0] in files):  # If remote is file, and not present on local
                     self.connection.delete(elem[0])
+
+        return uploaded_files
 
 
 class BitBucketClient:
@@ -223,7 +228,7 @@ class FtpClient:
         ftp_sync = FtpSynchronizer(self.__ftp_host, 21, self.__username, self.__password, self.__local_dir,
                                    self.__ftp_path, self.__omit)
 
-        ftp_sync.sync()
+        return ftp_sync.sync()
 
 
 def _worker():

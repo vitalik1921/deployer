@@ -40,16 +40,17 @@ def pull_and_push(listener, push_types):
 
         # push new files to ftp server
         ftp_client = FtpClient(repo_dir, server_path, server.host, server.username, server.password)
+        uploaded_files = 0
         try:
-            ftp_client.push_files()
+            uploaded_files = ftp_client.push_files()
         except Exception as e:
             return HttpResponseBadRequest(
                 add_log_record("[ !!! ] FTP sync ({}) runtime error: {}".format(server.name, e.args), listener, True))
         finally:
             del repo
 
-        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully"
-                       .format(listener.repository_slug, branch, server.name), listener)
+        add_log_record("[  *  ] Repository <{}> with branch <{}> was pushed to <{}> successfully. {} files was loaded"
+                       .format(listener.repository_slug, branch, server.name, uploaded_files), listener)
 
         add_log_record("[ END ] Task execution was ended for <{}>".format(listener.repository_slug), listener, True)
 
